@@ -590,6 +590,8 @@ function initGame() {
   comboDisplay.style.opacity = '0';
   showScreen('playing');
   cancelAnimationFrame(animId);
+  cancelAnimationFrame(idleAnimId);  // stop idle bird animation
+  idleAnimId = null;
   if (musicOn) startAmbient();
   animId = requestAnimationFrame(gameLoop);
 }
@@ -899,9 +901,9 @@ function renderPipe(p) {
   // top pipe: from y=0 down to gapTop
   drawPipeSection(p.x, 0, PIPE_W, p.gapTop, true, capH, capE, p.warn);
 
-  // bottom pipe: from gapTop+gap to the ground line
+  // bottom pipe: extend all the way to H so the ground always fully covers it
   const bY = p.gapTop + p.gap;
-  const bH = H - GROUND_H - bY;
+  const bH = H - bY;
   drawPipeSection(p.x, bY, PIPE_W, bH, false, capH, capE, p.warn);
 
   ctx.restore();
@@ -1088,7 +1090,7 @@ function idleLoop() {
   cancelAnimationFrame(idleAnimId);
   birdIdleT = 0;
   function frame(ts) {
-    if (gameRunning) return;
+    if (gameRunning) { idleAnimId = null; return; }
     birdIdleT += 0.04;
     drawBg(ts);
     renderBird(W*.22, H*.44 + Math.sin(birdIdleT)*6, -1);
@@ -1102,6 +1104,8 @@ function draw(ts) {
   ctx.save(); ctx.translate(shakeX,shakeY);
   drawBg(ts);
   pipes.forEach(p=>renderPipe(p));
+  // Redraw ground on top of pipes so bottom pipe is never visible below ground
+  drawGround();
   renderBird(bird.x,bird.y,bird.vy);
   drawParticles(); drawPopups();
   ctx.restore();
