@@ -52,7 +52,7 @@ canvas{display:block;border-radius:22px}
 .ib-btn.primary{background:linear-gradient(135deg,#FFD166,#F4845F);color:#1a0a2e}
 .ib-btn.ghost{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12)}
 
-.screen{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(5,1,20,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.screen{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(2,0,12,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .screen.hidden{display:none}
 
 /* MAIN MENU */
@@ -103,16 +103,17 @@ canvas{display:block;border-radius:22px}
 .lb-empty{color:rgba(255,255,255,.35);font-size:.85rem;text-align:center;padding:20px 0}
 
 /* GAME OVER / STATS */
-#statsScreen .stats-title{font-family:'Fredoka One',cursive;font-size:2rem;margin-bottom:2px}
-#statsScreen .stats-medal{font-size:2.6rem;margin:2px 0;filter:drop-shadow(0 0 16px rgba(255,200,50,.7))}
-#statsScreen .stats-msg{color:rgba(255,255,255,.55);font-size:.88rem;margin-bottom:6px}
+#statsScreen{background:rgba(2,0,12,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#statsScreen .stats-title{font-family:'Fredoka One',cursive;font-size:2.2rem;margin-bottom:2px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.8)}
+#statsScreen .stats-medal{font-size:3rem;margin:2px 0;filter:drop-shadow(0 0 20px rgba(255,200,50,.9))}
+#statsScreen .stats-msg{color:rgba(255,255,255,.75);font-size:.92rem;margin-bottom:6px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:240px}
-.stat-cell{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:9px 10px;text-align:center}
-.stat-cell .cell-val{font-family:'Fredoka One',cursive;font-size:1.5rem;color:#fff;line-height:1}
-.stat-cell .cell-val.gold{color:#FFD166}
-.stat-cell .cell-val.hot{color:#F4845F}
-.stat-cell .cell-label{font-size:.64rem;color:rgba(255,255,255,.4);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
-.new-best-badge{background:linear-gradient(135deg,#FFD166,#F4845F);color:#1a0a2e;font-family:'Fredoka One',cursive;font-size:.8rem;padding:3px 10px;border-radius:20px;letter-spacing:1px;display:none}
+.stat-cell{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 10px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.stat-cell .cell-val{font-family:'Fredoka One',cursive;font-size:1.5rem;color:#fff;line-height:1;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.stat-cell .cell-val.gold{color:#FFD166;text-shadow:0 0 14px rgba(255,209,102,.6)}
+.stat-cell .cell-val.hot{color:#F4845F;text-shadow:0 0 14px rgba(244,132,95,.5)}
+.stat-cell .cell-label{font-size:.64rem;color:rgba(255,255,255,.6);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.new-best-badge{background:linear-gradient(135deg,#FFD166,#F4845F);color:#1a0a2e;font-family:'Fredoka One',cursive;font-size:.8rem;padding:3px 10px;border-radius:20px;letter-spacing:1px;display:none;box-shadow:0 2px 12px rgba(244,132,95,.5)}
 
 .action-row{display:flex;gap:10px;margin-top:4px}
 .act-btn{padding:12px 24px;font-family:'Fredoka One',cursive;font-size:1rem;border:none;border-radius:14px;cursor:pointer;transition:transform .14s;-webkit-tap-highlight-color:transparent}
