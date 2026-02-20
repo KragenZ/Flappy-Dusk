@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flappy Bird</title>
   <style>
-    /* ── Reset & Page Layout ── */
+    /* Reset & Page Layout */
     * {
       margin: 0;
       padding: 0;
@@ -13,14 +13,14 @@
     }
 
     body {
-      background: #1a1a2e;           /* dark navy background */
+      background: #1a1a2e;           
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
       font-family: 'Segoe UI', sans-serif;
-      user-select: none;             /* prevent text highlight on click */
+      user-select: none;             
     }
 
     h1 {
@@ -31,9 +31,9 @@
       text-transform: uppercase;
     }
 
-    /* ── Canvas Wrapper ── */
+    /* Canvas Wrapper ── */
     #gameWrapper {
-      position: relative;           /* lets us overlay the overlay div */
+      position: relative;           
     }
 
     canvas {
@@ -43,10 +43,10 @@
       cursor: pointer;
     }
 
-    /* ── Overlay (Start / Game Over screen) ── */
+    /* Overlay (Start / Game Over screen) */
     #overlay {
       position: absolute;
-      inset: 0;                      /* fill the wrapper */
+      inset: 0;                      
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -74,7 +74,7 @@
       font-weight: bold;
     }
 
-    /* ── Start / Restart Button ── */
+    /* Start / Restart Button */
     #startBtn {
       margin-top: 8px;
       padding: 12px 32px;
@@ -98,7 +98,7 @@
       display: none;
     }
 
-    /* ── Hint text below canvas ── */
+    /* Hint text below canvas  */
     #hint {
       margin-top: 12px;
       color: #aaa;
@@ -111,10 +111,10 @@
   <h1>🐦 Flappy Bird</h1>
 
   <div id="gameWrapper">
-    <!-- The game is drawn here -->
+    
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-    <!-- Shown before the game starts and after game over -->
+    
     <div id="overlay">
       <h2 id="overlayTitle">Flappy Bird</h2>
       <p id="overlayMsg">Navigate the bird through the pipes!</p>
@@ -127,7 +127,7 @@
 
   <script>
     // ─────────────────────────────────────────────
-    //  SETUP – grab canvas and 2D drawing context
+    //  SETUP 
     // ─────────────────────────────────────────────
     const canvas  = document.getElementById('gameCanvas');
     const ctx     = canvas.getContext('2d');
@@ -139,35 +139,35 @@
     const startBtn     = document.getElementById('startBtn');
 
     // ─────────────────────────────────────────────
-    //  CONSTANTS  (tweak these to change difficulty)
+    //  CONSTANTS  
     // ─────────────────────────────────────────────
-    const GRAVITY      = 0.45;   // how fast the bird falls each frame
-    const FLAP_POWER   = -8.5;   // upward velocity when the player flaps
-    const PIPE_SPEED   = 2.8;    // how fast pipes move left
-    const PIPE_WIDTH   = 60;     // width of each pipe
-    const GAP_SIZE     = 160;    // vertical space between top & bottom pipe
-    const PIPE_INTERVAL= 1600;   // milliseconds between new pipe spawns
-    const BIRD_SIZE    = 28;     // radius of the bird circle
+    const GRAVITY      = 0.45;   
+    const FLAP_POWER   = -8.5;   
+    const PIPE_SPEED   = 2.8;    
+    const PIPE_WIDTH   = 60;     
+    const GAP_SIZE     = 160;    
+    const PIPE_INTERVAL= 1600;   
+    const BIRD_SIZE    = 28;     
 
     // ─────────────────────────────────────────────
     //  GAME STATE VARIABLES
     // ─────────────────────────────────────────────
-    let bird;           // the bird object  { x, y, vy }
-    let pipes;          // array of pipe objects { x, gapTop }
-    let score;          // current score (number of pipes passed)
-    let gameRunning;    // true while game is in progress
-    let animFrameId;    // requestAnimationFrame handle (so we can cancel it)
-    let lastPipeTime;   // timestamp of when last pipe was spawned
+    let bird;           
+    let pipes;          
+    let score;          
+    let gameRunning;    
+    let animFrameId;    
+    let lastPipeTime;   
 
     // ─────────────────────────────────────────────
     //  INITIALISE (or reset) everything
     // ─────────────────────────────────────────────
     function initGame() {
-      // Place the bird in the centre-left of the canvas
+      
       bird = {
         x:  80,
         y:  canvas.height / 2,
-        vy: 0    // vertical velocity (pixels per frame)
+        vy: 0   
       };
 
       pipes       = [];
@@ -175,30 +175,30 @@
       gameRunning = true;
       lastPipeTime = performance.now();
 
-      // Hide the overlay so the canvas is visible
+     
       overlay.classList.add('hidden');
 
-      // Cancel any previous animation loop before starting a new one
+      
       cancelAnimationFrame(animFrameId);
 
-      // Kick off the game loop
+      
       animFrameId = requestAnimationFrame(gameLoop);
     }
 
     // ─────────────────────────────────────────────
-    //  FLAP  – give the bird an upward push
+    //  FLAP  
     // ─────────────────────────────────────────────
     function flap() {
-      if (!gameRunning) return;   // ignore input on game-over screen
-      bird.vy = FLAP_POWER;       // set upward velocity
+      if (!gameRunning) return;   
+      bird.vy = FLAP_POWER;       
     }
 
     // ─────────────────────────────────────────────
-    //  INPUT – spacebar and mouse click
+    //  INPUT 
     // ─────────────────────────────────────────────
     document.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
-        e.preventDefault();   // stop the page from scrolling
+        e.preventDefault();   
         flap();
       }
     });
@@ -206,24 +206,23 @@
     canvas.addEventListener('click', flap);
 
     startBtn.addEventListener('click', (e) => {
-      e.stopPropagation();   // don't also trigger a flap when clicking Start
+      e.stopPropagation();   
       initGame();
     });
 
     // ─────────────────────────────────────────────
-    //  SPAWN PIPE  – create a new pipe pair
+    //  SPAWN PIPE  
     // ─────────────────────────────────────────────
     function spawnPipe() {
-      // gapTop is the Y coordinate where the gap starts.
-      // We leave at least 80px from top and bottom edges.
+     
       const minTop = 80;
       const maxTop = canvas.height - GAP_SIZE - 80;
       const gapTop = Math.random() * (maxTop - minTop) + minTop;
 
       pipes.push({
-        x: canvas.width,   // start just off the right edge
+        x: canvas.width,   
         gapTop: gapTop,
-        passed: false       // track whether the bird has passed this pipe
+        passed: false      
       });
     }
 
@@ -269,8 +268,8 @@
     // ─────────────────────────────────────────────
     function update(timestamp) {
       // ── Bird physics ──
-      bird.vy += GRAVITY;       // gravity pulls bird down each frame
-      bird.y  += bird.vy;       // move bird by its velocity
+      bird.vy += GRAVITY;       
+      bird.y  += bird.vy;       
 
       // ── Ceiling check ──
       if (bird.y - BIRD_SIZE < 0) {
@@ -294,7 +293,7 @@
       for (let i = pipes.length - 1; i >= 0; i--) {
         const pipe = pipes[i];
 
-        pipe.x -= PIPE_SPEED;   // move pipe to the left
+        pipe.x -= PIPE_SPEED;   
 
         // Remove pipe once it's off-screen (to the left)
         if (pipe.x + PIPE_WIDTH < 0) {
