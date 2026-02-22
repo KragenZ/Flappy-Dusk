@@ -368,28 +368,22 @@ function getLeaderboard() {
   try { return JSON.parse(localStorage.getItem('fb_lb') || '[]'); } catch { return []; }
 }
 async function saveLeaderboardEntry(score) {
-  // Save to Firebase global leaderboard
   try {
     await db.collection("leaderboard").add({
       score: score,
-      name: "Player",
+      name: localStorage.getItem("fb_name") || "Player",
       timestamp: Date.now()
     });
   } catch (e) {
-    console.warn("Firebase save failed, falling back to local", e);
-    // Fallback: save locally
-    const lb = getLeaderboard();
-    lb.push({ score, date: new Date().toLocaleDateString() });
-    lb.sort((a,b)=>b.score-a.score);
-    lb.splice(10);
-    localStorage.setItem('fb_lb', JSON.stringify(lb));
+    console.error("Leaderboard save failed", e);
   }
 }
 async function renderLeaderboard() {
   const list = document.getElementById('lbList');
   list.innerHTML = '<div class="lb-empty">Loading...</div>';
   try {
-    const snap = await db.collection("leaderboard")
+    const snap = await db
+      .collection("leaderboard")
       .orderBy("score", "desc")
       .limit(10)
       .get();
@@ -402,21 +396,13 @@ async function renderLeaderboard() {
       const e = doc.data();
       return `<div class="lb-row">
         <span class="lb-rank ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
-        <span class="lb-name" style="font-size:.78rem;color:rgba(255,255,255,.55)">${new Date(e.timestamp).toLocaleDateString()}</span>
+        <span class="lb-name">${e.name || 'Player'}</span>
         <span class="lb-score">${e.score}</span>
       </div>`;
     }).join('');
   } catch (e) {
-    console.warn("Firebase load failed, falling back to local", e);
-    // Fallback to local leaderboard
-    const lb = getLeaderboard();
-    if (!lb.length) { list.innerHTML = '<div class="lb-empty">No scores yet.</div>'; return; }
-    const medals = ['gold','silver','bronze'];
-    list.innerHTML = lb.map((e,i) => `<div class="lb-row">
-      <span class="lb-rank ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
-      <span class="lb-name" style="font-size:.78rem;color:rgba(255,255,255,.55)">${e.date}</span>
-      <span class="lb-score">${e.score}</span>
-    </div>`).join('');
+    console.error("Leaderboard load failed", e);
+    list.innerHTML = '<div class="lb-empty">⚠️ Failed to load leaderboard</div>';
   }
 }
 
