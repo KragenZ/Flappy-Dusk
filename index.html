@@ -262,6 +262,22 @@ canvas{display:block;border-radius:22px}
 
 <p id="hint">Tap / Space to flap &nbsp;·&nbsp; P to pause</p>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAYHXlmLBOPtFGjlX-VAqrnQ50-MHhhA_U",
+  authDomain: "flappy-dusk.firebaseapp.com",
+  projectId: "flappy-dusk",
+  storageBucket: "flappy-dusk.firebasestorage.app",
+  messagingSenderId: "156960066613",
+  appId: "1:156960066613:web:2544aae541133a1a78b57c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
 <script>
 // ─── Canvas ──────────────────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
@@ -351,27 +367,57 @@ function saveBest(s) {
 function getLeaderboard() {
   try { return JSON.parse(localStorage.getItem('fb_lb') || '[]'); } catch { return []; }
 }
-function saveLeaderboardEntry(score) {
-  const lb = getLeaderboard();
-  lb.push({ score, date: new Date().toLocaleDateString() });
-  lb.sort((a,b)=>b.score-a.score);
-  lb.splice(10);
-  localStorage.setItem('fb_lb', JSON.stringify(lb));
-}
-function renderLeaderboard() {
-  const lb = getLeaderboard();
-  const list = document.getElementById('lbList');
-  if (!lb.length) {
-    list.innerHTML = '<div class="lb-empty">No scores yet.<br>Play a game first!</div>';
-    return;
+async function saveLeaderboardEntry(score) {
+  // Save to Firebase global leaderboard
+  try {
+    await db.collection("leaderboard").add({
+      score: score,
+      name: "Player",
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn("Firebase save failed, falling back to local", e);
+    // Fallback: save locally
+    const lb = getLeaderboard();
+    lb.push({ score, date: new Date().toLocaleDateString() });
+    lb.sort((a,b)=>b.score-a.score);
+    lb.splice(10);
+    localStorage.setItem('fb_lb', JSON.stringify(lb));
   }
-  const medals = ['gold','silver','bronze'];
-  list.innerHTML = lb.map((e,i) => `
-    <div class="lb-row">
+}
+async function renderLeaderboard() {
+  const list = document.getElementById('lbList');
+  list.innerHTML = '<div class="lb-empty">Loading...</div>';
+  try {
+    const snap = await db.collection("leaderboard")
+      .orderBy("score", "desc")
+      .limit(10)
+      .get();
+    if (snap.empty) {
+      list.innerHTML = '<div class="lb-empty">No scores yet.<br>Be the first!</div>';
+      return;
+    }
+    const medals = ['gold','silver','bronze'];
+    list.innerHTML = snap.docs.map((doc, i) => {
+      const e = doc.data();
+      return `<div class="lb-row">
+        <span class="lb-rank ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+        <span class="lb-name" style="font-size:.78rem;color:rgba(255,255,255,.55)">${new Date(e.timestamp).toLocaleDateString()}</span>
+        <span class="lb-score">${e.score}</span>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.warn("Firebase load failed, falling back to local", e);
+    // Fallback to local leaderboard
+    const lb = getLeaderboard();
+    if (!lb.length) { list.innerHTML = '<div class="lb-empty">No scores yet.</div>'; return; }
+    const medals = ['gold','silver','bronze'];
+    list.innerHTML = lb.map((e,i) => `<div class="lb-row">
       <span class="lb-rank ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
       <span class="lb-name" style="font-size:.78rem;color:rgba(255,255,255,.55)">${e.date}</span>
       <span class="lb-score">${e.score}</span>
     </div>`).join('');
+  }
 }
 
 // ─── DOM refs ────────────────────────────────────────────────────
