@@ -245,6 +245,7 @@ canvas{display:block;border-radius:22px}
       <button class="act-btn ghost" id="statsMenu">☰ Menu</button>
       <button class="act-btn primary" id="statsPlay">🔄 Play Again</button>
     </div>
+    <button class="act-btn ghost" id="statsLeaderboard" style="margin-top:4px;width:100%;max-width:210px;font-size:.85rem;padding:8px">🏆 View Leaderboard</button>
   </div>
 </div>
 
@@ -282,8 +283,8 @@ let activePowerUp = null;  // { id, emoji, label, color, timer, maxTimer }
 let powerUpQueue  = [];    // spawned items on screen
 const POWERUP_TYPES = [
   { id:'shield',   emoji:'🛡️', color:'#86efac', label:'Shield',    duration:300 },
-  { id:'slowmo',   emoji:'🐌', color:'#c4b5fd', label:'Slow-Mo',   duration:240 },
-  { id:'magnet',   emoji:'🧲', color:'#60a5fa', label:'Auto-Aim',  duration:180 },
+  { id:'slowmo',   emoji:'⏱️', color:'#c4b5fd', label:'Freeze Pipes', duration:240 },
+  { id:'magnet',   emoji:'🧲', color:'#60a5fa', label:'Magnet',    duration:180 },
   { id:'tiny',     emoji:'🔬', color:'#f9a8d4', label:'Tiny Bird', duration:360 },
 ];
 
@@ -325,10 +326,11 @@ let hapticOn  = localStorage.getItem('fb_haptic') !== 'off';
 
 function savePref(key, val) { localStorage.setItem(key, val); }
 function saveBest(s) {
+  // Always record every run on the leaderboard
+  saveLeaderboardEntry(s);
   if (s > bestScore) {
     bestScore = s;
     localStorage.setItem('fb_best', String(s));
-    saveLeaderboardEntry(s);
     return true;
   }
   return false;
@@ -356,7 +358,7 @@ function renderLeaderboard() {
   list.innerHTML = lb.map((e,i) => `
     <div class="lb-row">
       <span class="lb-rank ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
-      <span class="lb-name">${e.date}</span>
+      <span class="lb-name" style="font-size:.78rem;color:rgba(255,255,255,.55)">${e.date}</span>
       <span class="lb-score">${e.score}</span>
     </div>`).join('');
 }
@@ -431,6 +433,7 @@ document.getElementById('settingsBack').addEventListener('pointerdown', e => { e
 document.getElementById('lbBack').addEventListener('pointerdown', e => { e.stopPropagation(); showScreen('menu'); });
 document.getElementById('statsMenu').addEventListener('pointerdown', e => { e.stopPropagation(); showScreen('menu'); idleLoop(); });
 document.getElementById('statsPlay').addEventListener('pointerdown', e => { e.stopPropagation(); initGame(); });
+document.getElementById('statsLeaderboard').addEventListener('pointerdown', e => { e.stopPropagation(); showScreen('leaderboard'); });
 document.getElementById('pauseMenu').addEventListener('pointerdown', e => { e.stopPropagation(); resumeGame(); showScreen('menu'); idleLoop(); });
 document.getElementById('pauseResume').addEventListener('pointerdown', e => { e.stopPropagation(); resumeGame(); });
 
@@ -625,7 +628,7 @@ function startAmbient() {
       const spd=1+(typeof difficulty==='number'?difficulty*0.5:0);
       masterGain.gain.setTargetAtTime(0.14+0.06*Math.sin(t*spd),ac.currentTime,0.3);
       // Slow-mo effect — dim ambient
-      const slowFactor = (activePowerUp?.id==='slowmo') ? 0.5 : 1;
+      const slowFactor = (activePowerUp?.id==='slowmo') ? 0.22 : 1;
       if (windNode) windGain.gain.setTargetAtTime((0.05+0.05*(typeof difficulty==='number'?difficulty:0))*slowFactor,ac.currentTime,0.8);
     },100);
     ambientNodes={oscs,masterGain,pulse,windOscs};
@@ -787,7 +790,7 @@ function tickPowerUps(ts) {
   }
 
   // Move power-ups across screen
-  const sp = activePowerUp?.id === 'slowmo' ? pipeSpeed * 0.4 : pipeSpeed;
+  const sp = activePowerUp?.id === 'slowmo' ? pipeSpeed * 0.22 : pipeSpeed;
   for (let i = powerUpQueue.length-1; i>=0; i--) {
     const pu = powerUpQueue[i];
     pu.x -= sp;
@@ -939,11 +942,14 @@ function collidesPipe(p) {
   const bR = effectiveBirdR();
   const m = bR*0.28;
   const bL=bird.x-bR+m, bRR=bird.x+bR-m, bT=bird.y-bR+m, bB=bird.y+bR-m;
-  // Magnet: bird auto-steers slightly toward gap center
+  // Magnet: strong active steering — finds nearest gap and pulls bird toward it aggressively
   const cx = p.x + PIPE_W/2;
   const cy = p.gapTop + p.gap/2;
-  if (activePowerUp?.id==='magnet' && Math.abs(bird.x - cx) < W*0.18) {
-    bird.vy += (cy - bird.y) * 0.018;
+  if (activePowerUp?.id==='magnet') {
+    const diff = cy - bird.y;
+    // Strong pull — damps existing velocity and steers hard toward gap center
+    bird.vy = bird.vy * 0.78 + diff * 0.12;
+    bird.vy = Math.max(-8*S, Math.min(8*S, bird.vy)); // clamp so it doesn't overshoot wildly
   }
   // Shield: no collision
   if (activePowerUp?.id==='shield') return false;
@@ -969,7 +975,7 @@ function checkNearMiss(p) {
 // ─── Difficulty ──────────────────────────────────────────────────
 function updateDifficulty() {
   difficulty = Math.min(score/30,1);
-  const slowFactor = activePowerUp?.id==='slowmo' ? 0.42 : 1;
+  const slowFactor = activePowerUp?.id==='slowmo' ? 0.22 : 1; // pipes almost stop
   pipeSpeed  = (BASE_PIPE_SPEED + difficulty*BASE_PIPE_SPEED*0.75) * slowFactor;
   gapSize    = BASE_GAP - difficulty*BASE_GAP*0.22;
 }
@@ -1037,9 +1043,8 @@ function showStats(isNewBest, elapsed) {
 function update(ts) {
   updateDifficulty();
 
-  // Slow-mo effect on gravity too
-  const gravMult = activePowerUp?.id==='slowmo' ? 0.45 : 1;
-  bird.vy += GRAVITY * gravMult;
+  // Slow-mo only slows pipes — gravity/flap unchanged so player keeps full control
+  bird.vy += GRAVITY;
   bird.y  += bird.vy;
 
   if (invincibleTimer>0) invincibleTimer--;
