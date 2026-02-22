@@ -133,7 +133,26 @@ No external game engine used.
 - Smooth physics tuned for responsiveness  
 - Mobile-friendly touch controls  
 - Optimized particle system  
-- Stable at high difficulty speeds  
+- Stable at high difficulty speeds
+
+## 🛠 Devlog
+
+**v1.3.0**
+
+- Fixed slow-mo making bird feel sluggish  
+- Reworked magnet steering strength  
+- Corrected flamingo hitbox mismatch  
+- Improved mobile responsiveness  
+
+**v1.2.0**
+
+- Added power-up system  
+- Added combo multiplier  
+- Added near-miss bonus  
+
+**v1.1.0**
+
+- Initial playable version  
 
 ---
 
