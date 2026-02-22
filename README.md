@@ -1,6 +1,6 @@
 # 🐦 Flappy Dusk — Enhanced Flappy Bird (PWA)
 
-![Gameplay] ![Uploading GameplayForFlappyDusk.gif…]()
+![Gameplay](./screenshots/gameplay.gif)
 
 
 A polished browser remake of Flappy Bird featuring power-ups, combo mechanics, and a fully installable PWA experience.
