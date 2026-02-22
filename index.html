@@ -315,7 +315,7 @@ let activePowerUp = null;  // { id, emoji, label, color, timer, maxTimer }
 let powerUpQueue  = [];    // spawned items on screen
 const POWERUP_TYPES = [
   { id:'shield',   emoji:'🛡️', color:'#86efac', label:'Shield',    duration:300 },
-  { id:'slowmo',   emoji:'⏱️', color:'#c4b5fd', label:'Slow World',   duration:300 },
+  { id:'slowmo',   emoji:'❄️', color:'#bae6fd', label:'Freeze Pipes', duration:240 },
   { id:'magnet',   emoji:'🧲', color:'#60a5fa', label:'Magnet',    duration:180 },
   { id:'tiny',     emoji:'🔬', color:'#f9a8d4', label:'Tiny Bird', duration:360 },
 ];
@@ -374,10 +374,16 @@ function getLeaderboard() {
 }
 async function saveLeaderboardEntry(score) {
   try {
+    // Basic anti-cheat
+    if (score < 0 || score > 10000) { console.warn("Score rejected (out of range)"); return; }
+    const lastSubmit = Number(localStorage.getItem("fb_last_submit") || 0);
+    if (Date.now() - lastSubmit < 10000) { console.warn("Submit cooldown active"); return; }
+    localStorage.setItem("fb_last_submit", Date.now());
     await db.collection("leaderboard").add({
       score: score,
       name: localStorage.getItem("fb_name") || "Player",
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      v: 1
     });
   } catch (e) {
     console.error("Leaderboard save failed", e);
@@ -691,7 +697,7 @@ function startAmbient() {
       const spd=1+(typeof difficulty==='number'?difficulty*0.5:0);
       masterGain.gain.setTargetAtTime(0.14+0.06*Math.sin(t*spd),ac.currentTime,0.3);
       // Slow-mo effect — dim ambient
-      const slowFactor = (activePowerUp?.id==='slowmo') ? 0.22 : 1;
+      const slowFactor = (activePowerUp?.id==='slowmo') ? 0 : 1;
       if (windNode) windGain.gain.setTargetAtTime((0.05+0.05*(typeof difficulty==='number'?difficulty:0))*slowFactor,ac.currentTime,0.8);
     },100);
     ambientNodes={oscs,masterGain,pulse,windOscs};
@@ -855,7 +861,7 @@ function tickPowerUps(ts) {
   }
 
   // Move power-ups across screen
-  const sp = activePowerUp?.id === 'slowmo' ? pipeSpeed * 0.22 : pipeSpeed;
+  const sp = activePowerUp?.id === 'slowmo' ? 0 : pipeSpeed;
   for (let i = powerUpQueue.length-1; i>=0; i--) {
     const pu = powerUpQueue[i];
     pu.x -= sp;
@@ -1094,8 +1100,8 @@ function checkNearMiss(p) {
 // ─── Difficulty ──────────────────────────────────────────────────
 function updateDifficulty() {
   difficulty = Math.min(score/30,1);
-  const slowFactor = activePowerUp?.id==='slowmo' ? 0.22 : 1; // pipes almost stop
-  pipeSpeed  = (BASE_PIPE_SPEED + difficulty*BASE_PIPE_SPEED*0.75) * slowFactor;
+  pipeSpeed = BASE_PIPE_SPEED + difficulty*BASE_PIPE_SPEED*0.75; // always full speed for world scroll
+  // Pipes themselves freeze but world keeps moving so bird feels like it's flying
   gapSize    = BASE_GAP - difficulty*BASE_GAP*0.22;
 }
 
@@ -1116,7 +1122,14 @@ function triggerDeath() {
   stopAmbient();
   spawnParticles(bird.x,bird.y,60,['#FFD166','#F4845F','#F28482','#fff','#FFE599','#c3f584','#84f5d5'],1.2);
   SFX.die(); triggerShake(18*S); vibe([60,40,80]);
-  const isNewBest=saveBest(score);
+  const elapsedSec = (performance.now() - sessionStart) / 1000;
+  const maxPossibleScore = Math.floor(elapsedSec * 2.2);
+  let isNewBest = false;
+  if (score > maxPossibleScore + 5) {
+    console.warn("Score rejected (implausible)", score, "max:", maxPossibleScore);
+  } else {
+    isNewBest = saveBest(score);
+  }
   const elapsed=Math.round((performance.now()-sessionStart)/1000);
 
   // Freeze the bird's final position for the drop animation
@@ -1194,7 +1207,7 @@ function update(ts, dt=1) {
 
   for (let i=pipes.length-1;i>=0;i--) {
     const p=pipes[i];
-    p.x -= pipeSpeed * dt;
+    p.x -= (activePowerUp?.id==='slowmo' ? 0 : pipeSpeed) * dt;
     p.alpha=Math.min(1,p.alpha+0.07);
     p.warn=(p.x-bird.x)<W*0.28&&!p.passed;
     if (p.x+PIPE_W<0){pipes.splice(i,1);continue;}
@@ -1413,8 +1426,16 @@ function renderBird(x,y,vy) {
     ctx.restore();
   }
   if (activePowerUp?.id==='slowmo') {
-    ctx.save(); ctx.globalAlpha=0.15; ctx.fillStyle='#c4b5fd';
-    ctx.beginPath(); ctx.arc(0,0,R*1.7,0,Math.PI*2); ctx.fill(); ctx.restore();
+    // Ice crystal aura — pulsing blue rings
+    const prog = activePowerUp.timer / activePowerUp.maxTimer;
+    ctx.save();
+    ctx.globalAlpha = 0.25 + 0.15 * Math.sin(T * 6);
+    ctx.strokeStyle = `rgba(186,230,253,${prog})`;
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,R*1.9,0,Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 0.12 + 0.08 * Math.sin(T * 4 + 1);
+    ctx.strokeStyle = `rgba(224,242,254,${prog})`;
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0,R*2.4,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
   }
 
   // ── Halo ──────────────────────────────────────────────────────
@@ -2004,6 +2025,54 @@ function draw(ts) {
   drawForeground();
   ctx.restore();
   drawHUD();
+  drawFreezeOverlay(ts);
+}
+
+function drawFreezeOverlay(ts) {
+  if (activePowerUp?.id !== 'slowmo') return;
+  const prog = activePowerUp.timer / activePowerUp.maxTimer;
+  const T = ts / 1000;
+
+  // Blue tint over entire screen
+  ctx.save();
+  ctx.globalAlpha = 0.08 + 0.04 * Math.sin(T * 3);
+  ctx.fillStyle = '#bae6fd';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // Frost vignette around edges
+  ctx.save();
+  const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.75);
+  vig.addColorStop(0, 'transparent');
+  vig.addColorStop(1, `rgba(186,230,253,${0.28 * prog})`);
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // Snowflake particles drifting down
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = `${Math.round(W * 0.035)}px sans-serif`;
+  ctx.textAlign = 'center';
+  // Use deterministic positions based on ts so they animate smoothly
+  for (let i = 0; i < 8; i++) {
+    const x = ((i * 137.5 + T * 22) % W);
+    const y = ((i * 83 + T * 38) % H);
+    ctx.globalAlpha = 0.3 + 0.2 * Math.sin(T * 2 + i);
+    ctx.fillText('❄', x, y);
+  }
+  ctx.restore();
+
+  // "FROZEN!" label at top
+  ctx.save();
+  ctx.globalAlpha = 0.7 * prog;
+  ctx.font = `bold ${Math.round(W * 0.055)}px "Fredoka One",cursive`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#e0f2fe';
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 12;
+  ctx.fillText('❄️ FROZEN!', W/2, H * 0.12);
+  ctx.restore();
 }
 
 let lastTs = 0;
