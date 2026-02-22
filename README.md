@@ -1,169 +1,150 @@
-# 🦩 Flappy Bird — Deluxe Edition
+# 🐦 Flappy Dusk — Enhanced Flappy Bird (PWA)
 
-A highly polished browser-based Flappy Bird remake featuring dynamic power-ups, combo mechanics, rich visual effects, and full PWA support.
+A polished browser remake of Flappy Bird featuring power-ups, combo mechanics, and a fully installable PWA experience.
 
-Built with a strong focus on **game feel, responsiveness, and production-level polish**.
+Built to practice **canvas rendering**, **game feel tuning**, and **mobile-first web deployment**.
 
----
-
-## 🎮 Live Demo
-
-👉 **Play here:** https://kragenz.github.io/Flappy-Dusk/
-
-> 💡 Installable as a PWA on mobile and desktop. Works offline.
+🔗 **Play here:** https://kragenz.github.io/Flappy-Dusk/
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### 🎯 Core Gameplay
-- Classic flap-through-pipes gameplay
-- ❤️ 3-life system with heart display
-- 📈 Dynamic difficulty scaling
-- 🎯 Near-miss bonus detection
-- 🔥 Combo multiplier system
-- 🌍 Ground collision detection
+### 🎮 Core Gameplay
 
----
+* Classic flap-through-pipes mechanics
+* 3-life system with damage feedback
+* Dynamic difficulty scaling
+* Ground collision detection
 
-### ⚡ Power-Ups
-Spawn periodically after early game progression:
+### ⚡ Advanced Mechanics
 
-- 🛡️ **Shield** — full invincibility for 5 seconds  
-- ⏱️ **Slow World** — environment slows to 22% speed while player physics remain responsive  
-- 🧲 **Auto-Aim** — gently steers bird toward next pipe gap  
-- 🔬 **Tiny Bird** — reduces hitbox to 50% size  
+* 🔥 Combo multiplier system
+* ⚡ Near-miss bonus detection
+* 🎁 Random power-ups:
 
----
+  * Shield (invincibility)
+  * Slow World
+  * Auto-Aim assist
+  * Tiny Bird (smaller hitbox)
 
-### 🎨 Unlockable Skins
-Unlock new birds by reaching score milestones:
+### 🎨 Visual Polish
 
-- 🐦 Classic  
-- 🦜 Parrot  
-- 🦅 Eagle  
-- 🦉 Owl  
-- 🐧 Penguin  
-- 🦩 Flamingo  
+* Multi-layer parallax dusk background
+* Fireflies, dust, and leaf particles
+* Screen shake & ring pulse effects
+* Bird trail system
+* 6 unlockable bird skins
 
-Each skin features unique proportions and styling.
+### 🏆 Leaderboard
 
----
+* Global leaderboard (Firebase)
+* Local best score tracking
+* Medal system for top runs
+* Player name persistence
 
-### 📊 Scoring & Leaderboard
-- 🏆 Top 10 leaderboard (persistent)
-- 🥇🥈🥉 Medal system for top scores
-- 📈 Best score tracking
-- 📋 Post-game stats screen:
-  - score
-  - best
-  - max combo
-  - time survived
-  - pipes passed
-  - near misses
+### 🎵 Audio
 
----
+* Procedural ambient background music
+* Soft synthesized sound effects
+* Separate toggles for Music / SFX
+* Mobile haptic feedback
 
-### 🎵 Audio System
-- 🌆 Ambient sine-wave background music
-- 🔊 Soft SFX for:
-  - flap
-  - score
-  - combo
-  - near miss
-  - hit/death
-  - power-ups
-- 🎚️ Separate Music and SFX toggles
-- 💾 Settings persist via localStorage
+### 📱 Progressive Web App
+
+* Installable on mobile & desktop
+* Offline support via service worker
+* Custom install prompt
+* Network status detection
 
 ---
 
-### 🌆 Visual Polish
-- Multi-layer dusk parallax background
-- Fireflies, leaves, and dust particles
-- Death and power-up particle bursts
-- Bird motion trail
-- Ring pulse effects
-- Screen shake on hit/death
-- Pipe warning glow at high speed
+## 🛠 Tech Stack
+
+* **HTML5 Canvas**
+* **Vanilla JavaScript**
+* **Web Audio API**
+* **Firebase Firestore**
+* **PWA (Service Worker + Manifest)**
+
+No frameworks — everything built from scratch.
 
 ---
 
-### ⏸ UI & UX
-- Main Menu, Settings, Leaderboard, Pause
-- Clean Game Over stats panel
-- Resume via overlay click
-- 📳 Mobile haptic feedback
-- Fully responsive layout
+## 🎯 What I Focused On
+
+This project was mainly an exercise in:
+
+* Game feel and responsiveness
+* Smooth canvas animation
+* Mobile performance
+* Clean UI/UX polish
+* Real-time leaderboard integration
+* PWA deployment pipeline
+
+Most gameplay values were tuned manually through playtesting.
 
 ---
 
-### 📱 Progressive Web App (PWA)
-- Installable on mobile and desktop
-- Offline support via service worker
-- App manifest + icons
-- Custom theme color
-- Install prompt banner
+## 🎮 Controls
+
+| Input       | Action |
+| ----------- | ------ |
+| Tap / Click | Flap   |
+| Space / ↑   | Flap   |
+| P / Esc     | Pause  |
 
 ---
 
-### ⚙️ Settings
-- Toggle Music
-- Toggle Sound FX
-- Toggle Haptics
-- Toggle Power-Ups
-- Reset leaderboard and scores
+## 🧪 Devlog
+
+### v1.3.0
+
+* Fixed slow-mo affecting player physics
+* Improved auto-aim strength
+* Corrected flamingo hitbox alignment
+* Added Firebase global leaderboard
+
+### v1.2.0
+
+* Added power-up system
+* Added combo multiplier
+* Added near-miss bonus
+
+### v1.1.0
+
+* Initial playable release
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Running Locally
 
-- **HTML5 Canvas**
-- **Vanilla JavaScript**
-- **CSS3**
-- **Web Audio API**
-- **Service Workers (PWA)**
+```bash
+git clone https://github.com/KragenZ/Flappy-Dusk.git
+cd Flappy-Dusk
+```
 
-No external game engine used.
-
----
-
-## 🚀 Performance Focus
-
-- Smooth physics tuned for responsiveness  
-- Mobile-friendly touch controls  
-- Optimized particle system  
-- Stable at high difficulty speeds
-
-## 🛠 Devlog
-
-**v1.3.0**
-
-- Fixed slow-mo making bird feel sluggish  
-- Reworked magnet steering strength  
-- Corrected flamingo hitbox mismatch  
-- Improved mobile responsiveness  
-
-**v1.2.0**
-
-- Added power-up system  
-- Added combo multiplier  
-- Added near-miss bonus  
-
-**v1.1.0**
-
-- Initial playable version  
+Then open `index.html` in your browser
+(or use VS Code Live Server).
 
 ---
 
-## 📸 Screenshots
+## 📌 Future Improvements
 
-<img width="816" height="916" alt="image" src="https://github.com/user-attachments/assets/7c88f1f8-f35c-4936-849d-c13fd6c5e5c2" />
-<img width="768" height="916" alt="image" src="https://github.com/user-attachments/assets/07e994cb-1d1c-48a2-982f-ec495d3f284b" />
-<img width="728" height="911" alt="image" src="https://github.com/user-attachments/assets/eaa00048-14da-4097-b708-07a015e18c7f" />
-<img width="722" height="902" alt="image" src="https://github.com/user-attachments/assets/f7a54a88-db22-42a0-9ae0-08bc55100221" />
+* [ ] Ghost replay system
+* [ ] Daily challenge mode
+* [ ] Additional bird skins
+* [ ] Performance optimizations on low-end mobile
 
+---
 
-## 👨‍💻 Author
+## 👤 Author
 
-Srijit Roy
+**Srijit Roy**
+CSE (AI/ML) student
+
+GitHub: https://github.com/KragenZ
+
+---
+
+⭐ If you like the project, consider starring the repo!
