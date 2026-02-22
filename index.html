@@ -283,7 +283,7 @@ let activePowerUp = null;  // { id, emoji, label, color, timer, maxTimer }
 let powerUpQueue  = [];    // spawned items on screen
 const POWERUP_TYPES = [
   { id:'shield',   emoji:'🛡️', color:'#86efac', label:'Shield',    duration:300 },
-  { id:'slowmo',   emoji:'⏱️', color:'#c4b5fd', label:'Freeze Pipes', duration:240 },
+  { id:'slowmo',   emoji:'⏱️', color:'#c4b5fd', label:'Slow World',   duration:300 },
   { id:'magnet',   emoji:'🧲', color:'#60a5fa', label:'Magnet',    duration:180 },
   { id:'tiny',     emoji:'🔬', color:'#f9a8d4', label:'Tiny Bird', duration:360 },
 ];
@@ -942,18 +942,24 @@ function collidesPipe(p) {
   const bR = effectiveBirdR();
   const m = bR*0.28;
   const bL=bird.x-bR+m, bRR=bird.x+bR-m, bT=bird.y-bR+m, bB=bird.y+bR-m;
-  // Magnet: strong active steering — finds nearest gap and pulls bird toward it aggressively
-  const cx = p.x + PIPE_W/2;
-  const cy = p.gapTop + p.gap/2;
-  if (activePowerUp?.id==='magnet') {
-    const diff = cy - bird.y;
-    // Strong pull — damps existing velocity and steers hard toward gap center
-    bird.vy = bird.vy * 0.78 + diff * 0.12;
-    bird.vy = Math.max(-8*S, Math.min(8*S, bird.vy)); // clamp so it doesn't overshoot wildly
-  }
   // Shield: no collision
   if (activePowerUp?.id==='shield') return false;
   return (bRR>p.x && bL<p.x+PIPE_W) && (bT<p.gapTop || bB>p.gapTop+p.gap);
+}
+
+// Called every frame from update() — finds the next upcoming pipe and steers toward its gap
+function applyMagnet() {
+  if (activePowerUp?.id !== 'magnet') return;
+  // Find the next pipe the bird hasn't passed yet
+  const next = pipes.find(p => p.x + PIPE_W > bird.x - BIRD_R*2);
+  if (!next) return;
+  const gapCY = next.gapTop + next.gap / 2;
+  const diff  = gapCY - bird.y;
+  // Smooth proportional pull — stronger when far, gentle when close
+  // Keeps flap responsive: only nudges velocity, never overrides it fully
+  const pull  = diff * 0.055;
+  bird.vy     = bird.vy * 0.88 + pull * 0.12;
+  bird.vy     = Math.max(-9*S, Math.min(9*S, bird.vy));
 }
 
 function checkNearMiss(p) {
@@ -1045,6 +1051,7 @@ function update(ts) {
 
   // Slow-mo only slows pipes — gravity/flap unchanged so player keeps full control
   bird.vy += GRAVITY;
+  applyMagnet(); // smooth per-frame steering toward next gap
   bird.y  += bird.vy;
 
   if (invincibleTimer>0) invincibleTimer--;
@@ -1309,7 +1316,11 @@ function renderBird(x,y,vy) {
     case 2: drawEagle(R,T);   break;
     case 3: drawOwl(R,T);     break;
     case 4: drawPenguin(R,T); break;
-    case 5: drawFlamingo(R,T);break;
+    case 5:
+      // Flamingo: body is the hitbox center. Shift render so the body sits at origin,
+      // neck+head extend upward visually but don't affect collision.
+      ctx.save(); ctx.translate(0, R*0.55); drawFlamingo(R,T); ctx.restore();
+      break;
     default: drawClassic(R,T);
   }
 
