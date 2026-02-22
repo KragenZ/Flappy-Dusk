@@ -124,6 +124,13 @@ canvas{display:block;border-radius:22px}
 
 #hint{position:relative;z-index:10;margin-top:12px;color:rgba(255,255,255,.25);font-size:clamp(.65rem,2.4vw,.78rem);letter-spacing:2px;text-transform:uppercase}
 
+/* Countdown overlay */
+#countdownOverlay{position:absolute;inset:0;border-radius:22px;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:50}
+#countdownNum{font-family:'Fredoka One',cursive;font-size:clamp(72px,22vw,140px);color:#F4845F;line-height:1}
+#countdownNum.pop{animation:cdpop .35s cubic-bezier(.175,.885,.32,1.4) forwards}
+@keyframes cdpop{0%{transform:scale(1.6);opacity:.4}100%{transform:scale(1);opacity:1}}
+#countdownReady{font-family:'Fredoka One',cursive;font-size:clamp(14px,4vw,22px);color:rgba(255,255,255,.7);letter-spacing:4px;margin-top:8px}
+
 /* Pause overlay */
 #pauseOverlay{position:absolute;inset:0;border-radius:22px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(5,1,20,.82);backdrop-filter:blur(12px)}
 #pauseOverlay.show{display:flex}
@@ -246,6 +253,10 @@ canvas{display:block;border-radius:22px}
       <button class="act-btn primary" id="statsPlay">🔄 Play Again</button>
     </div>
     <button class="act-btn ghost" id="statsLeaderboard" style="margin-top:4px;width:100%;max-width:210px;font-size:.85rem;padding:8px">🏆 View Leaderboard</button>
+  </div>
+  <div id="countdownOverlay">
+    <div id="countdownNum">3</div>
+    <div id="countdownReady">GET READY</div>
   </div>
 </div>
 
@@ -665,7 +676,9 @@ function rebuildBgAssets() {
 
 // ─── Particles ───────────────────────────────────────────────────
 function spawnParticles(x,y,n,colors,sm=1) {
-  for (let i=0;i<n;i++) {
+  const space = 120 - particles.length; // hard cap at 120 — prevents mobile lag
+  const count = Math.min(n, Math.max(0, space));
+  for (let i=0;i<count;i++) {
     const a=Math.random()*Math.PI*2, v=(Math.random()*4.5+0.8)*sm;
     particles.push({ x,y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-2.2, r:Math.random()*7+2.5, life:1, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*Math.PI, rotV:(Math.random()-.5)*0.22, shape:Math.random()<.4?'star':'circle' });
   }
@@ -882,7 +895,6 @@ function initGame() {
   deathFrames   = 0;
   nearMissCount = 0;
   lastPipePassTime = 0;
-  lastPipeTime  = performance.now();
   lastPowerUpSpawn = performance.now() - POWERUP_INTERVAL * 0.5;
   sessionStart  = performance.now();
   particles     = [];
@@ -893,6 +905,7 @@ function initGame() {
   gamePaused    = false;
   gameRunning   = true;
   gameStarted   = true;
+  lastTs        = 0;
 
   updateHearts();
   comboDisplay.style.opacity = '0';
@@ -904,7 +917,52 @@ function initGame() {
   cancelAnimationFrame(idleAnimId);
   idleAnimId = null;
   if (musicOn) startAmbient();
+
+  // Show 3-2-1 as a simple HTML overlay, game runs underneath
+  showCountdownOverlay(() => {
+    lastPipeTime = performance.now(); // start pipe timer fresh when GO fires
+  });
+
   animId = requestAnimationFrame(gameLoop);
+}
+
+// ─── Countdown overlay (pure HTML/CSS — no canvas, no rAF conflicts) ──
+function showCountdownOverlay(onDone) {
+  const el = document.getElementById('countdownOverlay');
+  const numEl = document.getElementById('countdownNum');
+  let n = 3;
+
+  function show(label, color) {
+    numEl.textContent = label;
+    numEl.style.color = color;
+    numEl.style.textShadow = `0 0 40px ${color}`;
+    // Restart animation by removing/re-adding class
+    numEl.classList.remove('pop');
+    void numEl.offsetWidth; // force reflow
+    numEl.classList.add('pop');
+  }
+
+  el.style.display = 'flex';
+  countdownActive = true;
+  show(n, '#F4845F');
+  SFX.flap();
+
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(iv);
+      show('GO!', '#86efac');
+      SFX.score();
+      setTimeout(() => {
+        el.style.display = 'none';
+        countdownActive = false;
+        onDone();
+      }, 600);
+    } else {
+      show(n, n === 2 ? '#FFD166' : '#86efac');
+      SFX.flap();
+    }
+  }, 1000);
 }
 
 // ─── Input ───────────────────────────────────────────────────────
@@ -931,6 +989,9 @@ canvas.addEventListener('pointerdown', e => {
 
 // ─── Pipes ───────────────────────────────────────────────────────
 function spawnPipe(ts) {
+  // Never spawn if a pipe was just spawned too recently (min gap = 1 screen width)
+  const lastPipe = pipes[pipes.length - 1];
+  if (lastPipe && lastPipe.x > W * 0.55) return;
   const minTop = GROUND_H + gapSize*0.55;
   const maxTop = H - GROUND_H - gapSize - GROUND_H*0.55;
   const tints = [null,'rgba(0,60,20,.18)','rgba(0,30,60,.15)','rgba(40,0,10,.12)',null];
@@ -1046,13 +1107,14 @@ function showStats(isNewBest, elapsed) {
 }
 
 // ─── Update ──────────────────────────────────────────────────────
-function update(ts) {
+function update(ts, dt=1) {
+  if (countdownActive) return; // entire world frozen during countdown
   updateDifficulty();
 
   // Slow-mo only slows pipes — gravity/flap unchanged so player keeps full control
-  bird.vy += GRAVITY;
-  applyMagnet(); // smooth per-frame steering toward next gap
-  bird.y  += bird.vy;
+  bird.vy += GRAVITY * dt;
+  applyMagnet();
+  bird.y  += bird.vy * dt;
 
   if (invincibleTimer>0) invincibleTimer--;
 
@@ -1066,11 +1128,11 @@ function update(ts) {
   wingAngle+=wingDir*0.13;
   if (wingAngle>0.58){wingAngle=0.58;wingDir=-1;} if(wingAngle<-0.58){wingAngle=-0.58;wingDir=1;}
 
-  groundOffset=(groundOffset+pipeSpeed)%Math.round(60*S);
-  BUSHES.forEach(b=>{b.x-=pipeSpeed*0.55;if(b.x+b.r<0)b.x=W+b.r;});
-  FAR_CLOUDS.forEach(c=>{c.x-=c.spd*S;if(c.x+c.w<0)c.x=W+20;});
-  MID_CLOUDS.forEach(c=>{c.x-=c.spd*S;if(c.x+c.w<0)c.x=W+20;});
-  NEAR_CLOUDS.forEach(c=>{c.x-=c.spd*S;if(c.x+c.w<0)c.x=W+20;});
+  groundOffset=(groundOffset+pipeSpeed*dt)%Math.round(60*S);
+  BUSHES.forEach(b=>{b.x-=pipeSpeed*0.55*dt;if(b.x+b.r<0)b.x=W+b.r;});
+  FAR_CLOUDS.forEach(c=>{c.x-=c.spd*S*dt;if(c.x+c.w<0)c.x=W+20;});
+  MID_CLOUDS.forEach(c=>{c.x-=c.spd*S*dt;if(c.x+c.w<0)c.x=W+20;});
+  NEAR_CLOUDS.forEach(c=>{c.x-=c.spd*S*dt;if(c.x+c.w<0)c.x=W+20;});
 
   const effectivePipeEvery = Math.max(1000, PIPE_EVERY - difficulty*400);
   if (ts-lastPipeTime>effectivePipeEvery) spawnPipe(ts);
@@ -1080,7 +1142,7 @@ function update(ts) {
 
   for (let i=pipes.length-1;i>=0;i--) {
     const p=pipes[i];
-    p.x-=pipeSpeed;
+    p.x -= pipeSpeed * dt;
     p.alpha=Math.min(1,p.alpha+0.07);
     p.warn=(p.x-bird.x)<W*0.28&&!p.passed;
     if (p.x+PIPE_W<0){pipes.splice(i,1);continue;}
@@ -1125,15 +1187,21 @@ function update(ts) {
 }
 
 // ─── Drawers (unchanged from v1.2) ───────────────────────────────
+let _skyCache = null, _skyD = -1, _skyH = -1;
 function drawBg(ts) {
-  const d=typeof difficulty==='number'?difficulty:0;
-  const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,`hsl(${258-d*20},85%,${5+d*2}%)`);
-  sky.addColorStop(0.28,`hsl(${245-d*25},75%,${14+d*4}%)`);
-  sky.addColorStop(0.58,`hsl(${320-d*40},55%,${30+d*8}%)`);
-  sky.addColorStop(0.78,`hsl(${15+d*5},75%,${48-d*10}%)`);
-  sky.addColorStop(0.90,`hsl(${30+d*5},90%,${55-d*12}%)`);
-  sky.addColorStop(1,'#0d0320');
+  const d=typeof difficulty==='number'?Math.round(difficulty*20)/20:0; // quantize to 0.05 steps
+  if (_skyD !== d || _skyH !== H) {
+    _skyD = d; _skyH = H;
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,`hsl(${258-d*20},85%,${5+d*2}%)`);
+    g.addColorStop(0.28,`hsl(${245-d*25},75%,${14+d*4}%)`);
+    g.addColorStop(0.58,`hsl(${320-d*40},55%,${30+d*8}%)`);
+    g.addColorStop(0.78,`hsl(${15+d*5},75%,${48-d*10}%)`);
+    g.addColorStop(0.90,`hsl(${30+d*5},90%,${55-d*12}%)`);
+    g.addColorStop(1,'#0d0320');
+    _skyCache = g;
+  }
+  const sky = _skyCache;
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
   const sunX=W*.76,sunY=H*.76;
   const sun=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,H*.2);
@@ -1886,10 +1954,15 @@ function draw(ts) {
   drawHUD();
 }
 
+let lastTs = 0;
 function gameLoop(ts) {
-  if (gamePaused) return;
-  update(ts);
-  if (gameRunning){draw(ts);animId=requestAnimationFrame(gameLoop);}
+  if (!gameRunning || gamePaused) return;
+  // Delta-time: clamp to avoid huge jumps after tab switch or countdown gap
+  const rawDt = lastTs ? (ts - lastTs) / 16.667 : 1;
+  const dt    = Math.min(Math.max(rawDt, 0.5), 1.5);
+  lastTs = ts;
+  update(ts, dt);
+  if (gameRunning) { draw(ts); animId = requestAnimationFrame(gameLoop); }
 }
 
 // ─── PWA: Service Worker ─────────────────────────────────────────
