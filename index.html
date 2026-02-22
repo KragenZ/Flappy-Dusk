@@ -219,6 +219,11 @@ canvas{display:block;border-radius:22px}
       <span class="sr-label">⚡ Power-Ups</span>
       <button class="toggle" id="togglePowerups"></button>
     </div>
+    <div class="setting-row">
+      <span class="sr-label">👤 Name</span>
+      <input id="playerName" type="text" maxlength="12" placeholder="Enter name"
+        style="width:110px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:.88rem;font-family:'Nunito',sans-serif;text-align:center;outline:none"/>
+    </div>
     <div class="action-row" style="margin-top:12px">
       <button class="act-btn ghost" id="settingsBack">← Back</button>
       <button class="act-btn ghost" id="resetScores">🗑 Reset</button>
@@ -453,6 +458,21 @@ applyToggle(toggleSfx,      sfxOn);
 applyToggle(toggleMusic,    musicOn);
 applyToggle(toggleHaptic,   hapticOn);
 applyToggle(togglePowerups, powerupsOn);
+
+// ─── Player name ─────────────────────────────────────────────────
+const nameInput = document.getElementById('playerName');
+// Auto-assign a unique default so leaderboard never shows 50 x "Player"
+if (!localStorage.getItem('fb_name')) {
+  const defaultName = 'Player' + Math.floor(Math.random() * 1000);
+  localStorage.setItem('fb_name', defaultName);
+}
+nameInput.value = localStorage.getItem('fb_name');
+// 'input' fires on every keystroke — safer on mobile than 'change'
+nameInput.addEventListener('input', () => {
+  let name = nameInput.value.trim().replace(/[^\w\s]/gi, '').slice(0, 12);
+  if (!name) name = 'Player';
+  localStorage.setItem('fb_name', name);
+});
 
 toggleSfx.addEventListener('click', () => { sfxOn=!sfxOn; applyToggle(toggleSfx,sfxOn); savePref('fb_sfx',sfxOn?'on':'off'); });
 toggleMusic.addEventListener('click', () => { musicOn=!musicOn; applyToggle(toggleMusic,musicOn); savePref('fb_music',musicOn?'on':'off'); musicOn?startAmbient():stopAmbient(); });
