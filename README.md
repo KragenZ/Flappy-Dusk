@@ -8,7 +8,7 @@ Built with a strong focus on **game feel, responsiveness, and production-level p
 
 ## 🎮 Live Demo
 
-👉 **Play here:** https://kragenz.github.io/Flappy-Bird/
+👉 **Play here:** https://kragenz.github.io/Flappy-Dusk/
 
 > 💡 Installable as a PWA on mobile and desktop. Works offline.
 
