@@ -808,10 +808,10 @@ function tickShake() {
   shakeX=(Math.random()-.5)*shakeAmt; shakeY=(Math.random()-.5)*shakeAmt; shakeAmt*=0.72;
 }
 
-// ─── Haptic ──────────────────────────────────────────────────────
+// Haptics
 function vibe(pattern) { if (hapticOn&&navigator.vibrate) navigator.vibrate(pattern); }
 
-// ─── Hearts UI ───────────────────────────────────────────────────
+// UI For The Hearts
 function updateHearts() {
   heartRow.innerHTML='';
   for (let i=0;i<MAX_LIVES;i++) {
@@ -819,7 +819,8 @@ function updateHearts() {
   }
 }
 
-// ─── Power-Up System ─────────────────────────────────────────────
+// Power-up system
+// Handles spawn, pickup, and active effects
 let lastPowerUpSpawn = 0;
 const POWERUP_INTERVAL = 12000; // ms between power-up spawns
 
@@ -836,15 +837,15 @@ function maybeSpawnPowerUp(ts) {
   powerUpQueue.push({
     x: W + 30,
     y: minY + Math.random() * (maxY - minY),
-    typeObj,               // full object stored here
-    r: BIRD_R * 1.1,       // slightly bigger hitbox so it's catchable
+    typeObj,               // full object stored
+    r: BIRD_R * 1.1,       // bigger catchable hitbox
     collected: false,
     alpha: 0
   });
 }
 
 function tickPowerUps(ts) {
-  // Tick active power-up countdown
+  // power up countdown
   if (activePowerUp) {
     activePowerUp.timer--;
     if (activePowerUp.timer <= 0) {
@@ -860,7 +861,7 @@ function tickPowerUps(ts) {
     }
   }
 
-  // Move power-ups across screen
+  // Move power up across screen
   const sp = activePowerUp?.id === 'slowmo' ? 0 : pipeSpeed;
   for (let i = powerUpQueue.length-1; i>=0; i--) {
     const pu = powerUpQueue[i];
@@ -868,7 +869,7 @@ function tickPowerUps(ts) {
     pu.alpha = Math.min(1, pu.alpha + 0.05);
     if (pu.x + pu.r < 0) { powerUpQueue.splice(i,1); continue; }
 
-    // Collection radius — magnet makes it much easier to grab
+    // Radius to collect powerup
     const collectR = pu.r + (activePowerUp?.id === 'magnet' ? BIRD_R*5 : BIRD_R);
     const dx = bird.x - pu.x, dy = bird.y - pu.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
